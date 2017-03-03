@@ -206,12 +206,23 @@ public class EddaASGJanitorCrawler implements JanitorCrawler {
 		if (maxSize != null) {
 			resource.setAdditionalField(ASG_FIELD_MAX_SIZE, String.valueOf(maxSize.getIntValue()));
 		}
-		addInstance();
+		addInstance(resource, jsonNode, lcNameToCreationTime);
 		// Adds instances and ELBs as additional fields.
 
+		setFieldTime(jsonNode, resource, asgName);
 		// sets the field for the time when the ASG's traffic is suspended from
 		// ELB
 
+		Long lastChangeTime = regionToAsgToLastChangeTime.get(region).get(asgName);
+		if (lastChangeTime != null) {
+			resource.setAdditionalField(ASG_FIELD_LAST_CHANGE_TIME, String.valueOf(lastChangeTime));
+		}
+		return resource;
+
+	}
+
+	private void setFieldTime(JsonNode jsonNode, Resource resource, Object asgName) {
+		// TODO Auto-generated method stub
 		JsonNode suspendedProcesses = jsonNode.get("suspendedProcesses");
 		for (Iterator<JsonNode> it = suspendedProcesses.getElements(); it.hasNext();) {
 			JsonNode sp = it.next();
@@ -224,15 +235,10 @@ public class EddaASGJanitorCrawler implements JanitorCrawler {
 				}
 			}
 		}
-		Long lastChangeTime = regionToAsgToLastChangeTime.get(region).get(asgName);
-		if (lastChangeTime != null) {
-			resource.setAdditionalField(ASG_FIELD_LAST_CHANGE_TIME, String.valueOf(lastChangeTime));
-		}
-		return resource;
 
 	}
 
-	private void addInstance() {
+	private void addInstance(Resource resource, JsonNode jsonNode, Map<String, Long> lcNameToCreationTime) {
 		JsonNode instances = jsonNode.get("instances");
 		resource.setDescription(String.format("%d instances", instances.size()));
 		List<String> instanceIds = Lists.newArrayList();
